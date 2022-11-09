@@ -1,14 +1,13 @@
 from flask import Flask, Blueprint, request
 from ...helpers.api import ApiHelper
-from ...helpers.decorators import any_key_required, limiter
+from ...helpers.decorators import rapidapi_only
 from app.models import Clubs, User
 from app import cache
 
 api_bp = Blueprint("clubs", __name__)
 
 @api_bp.get("/clubs")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def clubs():
     query_params = ApiHelper().convert_query_params()
@@ -27,8 +26,7 @@ def clubs():
     }
 
 @api_bp.get("/clubs/<club_id>")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def specific_club(club_id):
     result = Clubs().get_club(club_id)
@@ -45,8 +43,7 @@ def specific_club(club_id):
     }
 
 @api_bp.get("/clubs/<club_id>/image")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def club_badge(club_id):
     result = Clubs().get_club_image(club_id)

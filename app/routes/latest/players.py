@@ -1,14 +1,13 @@
 from flask import Flask, Blueprint, request
 from ...helpers.api import ApiHelper
-from ...helpers.decorators import any_key_required, premium_required, limiter
+from ...helpers.decorators import rapidapi_only
 from app.models import Player, PlayerImage
 from app import cache
 
 api_bp = Blueprint("players", __name__)
 
 @api_bp.get("/players")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def players():
     query_params = ApiHelper().convert_query_params()
@@ -27,8 +26,7 @@ def players():
     }
 
 @api_bp.get("/players/nation/<nation_id>")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def players_by_nation(nation_id):
     query_params = ApiHelper().convert_query_params()
@@ -47,8 +45,7 @@ def players_by_nation(nation_id):
     }
 
 @api_bp.get("/players/league/<league_id>")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def players_by_league(league_id):
     query_params = ApiHelper().convert_query_params()
@@ -67,8 +64,7 @@ def players_by_league(league_id):
     }
 
 @api_bp.get("/players/club/<club_id>")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def players_by_club(club_id):
     query_params = ApiHelper().convert_query_params()
@@ -87,8 +83,7 @@ def players_by_club(club_id):
     }
 
 @api_bp.get("/players/<player_id>")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def player_by_id(player_id):
     result = Player().find_player_by_id(player_id)
@@ -105,8 +100,7 @@ def player_by_id(player_id):
     }
 
 @api_bp.get("/players/<player_id>/image")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def player_image(player_id):
     result = PlayerImage().get_image_by_id(player_id)
@@ -123,8 +117,7 @@ def player_image(player_id):
     }
 
 @api_bp.get("/players/<player_id>/price")
-@premium_required
-@limiter
+@rapidapi_only
 def player_price(player_id, force_update = False):
     if "price_update" in request.args and int(request.args["price_update"]) == 1:
         Player().update_player_prices(player_id)
@@ -143,8 +136,7 @@ def player_price(player_id, force_update = False):
     }
 
 @api_bp.get("/players/latest/<player_id>")
-@premium_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def latest_players(player_id):
     query_params = ApiHelper().convert_query_params()
@@ -163,8 +155,7 @@ def latest_players(player_id):
     }
 
 @api_bp.post("/players/search")
-@premium_required
-@limiter
+@rapidapi_only
 def search_players():
     request_json = request.get_json()
     result = Player().search_players(request_json)

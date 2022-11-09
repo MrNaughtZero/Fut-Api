@@ -1,14 +1,13 @@
 from flask import Flask, Blueprint, request
 from ...helpers.api import ApiHelper
-from ...helpers.decorators import any_key_required, limiter
+from ...helpers.decorators import rapidapi_only
 from app.models import Nations
 from app import cache
 
 api_bp = Blueprint("nations", __name__)
 
 @api_bp.get("/nations")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def nations():
     query_params = ApiHelper().convert_query_params()
@@ -27,8 +26,7 @@ def nations():
     }
 
 @api_bp.get("/nations/<nation_id>")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def specific_nation(nation_id):
     result = Nations().get_nation(nation_id)
@@ -45,8 +43,7 @@ def specific_nation(nation_id):
     }
 
 @api_bp.get("/nations/<nation_id>/image")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def nation_image(nation_id):
     result = Nations().get_nation_image(nation_id)

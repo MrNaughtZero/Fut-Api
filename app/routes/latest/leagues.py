@@ -1,14 +1,13 @@
 from flask import Flask, Blueprint
 from ...helpers.api import ApiHelper
-from ...helpers.decorators import any_key_required, limiter
+from ...helpers.decorators import rapidapi_only
 from app.models import Leagues
 from app import cache
 
 api_bp = Blueprint("leagues", __name__)
 
 @api_bp.get("/leagues")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def leagues():
     query_params = ApiHelper().convert_query_params()
@@ -27,8 +26,7 @@ def leagues():
     }
 
 @api_bp.get("/leagues/<league_id>")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def specific_league(league_id):
     result = Leagues().get_league(league_id)
@@ -45,8 +43,7 @@ def specific_league(league_id):
     }
 
 @api_bp.get("/leagues/<league_id>/image")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def league_image(league_id):
     result = Leagues().get_league_image(league_id)

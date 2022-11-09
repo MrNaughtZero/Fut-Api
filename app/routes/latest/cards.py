@@ -1,14 +1,13 @@
 from flask import Flask, Blueprint
 from ...helpers.api import ApiHelper
-from ...helpers.decorators import any_key_required, limiter
+from ...helpers.decorators import rapidapi_only
 from app.models import Cards
 from app import cache
 
 api_bp = Blueprint("cards", __name__)
 
 @api_bp.get("/cards")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached(query_string=True)
 def cards():
     query_params = ApiHelper().convert_query_params()
@@ -27,8 +26,7 @@ def cards():
     }
 
 @api_bp.get("/cards/<card_id>")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def specific_card(card_id):
     result = Cards().get_card(card_id)
@@ -45,8 +43,7 @@ def specific_card(card_id):
     }
 
 @api_bp.get("/cards/<card_id>/image")
-@any_key_required
-@limiter
+@rapidapi_only
 @cache.cached()
 def card_image(card_id):
     result = Cards().get_image(card_id)
