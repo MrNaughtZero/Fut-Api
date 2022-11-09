@@ -22,10 +22,12 @@ def rapidapi_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         rapid_header = request.headers.get("X-RapidAPI-Proxy-Secret")
-        if not rapid_header:
-            return False
-        if rapid_header != os.environ.get("RAPID_PROXY_SECRET"):
-            return False
+        if not rapid_header or rapid_header != environ.get("RAPID_PROXY_SECRET"):
+            return {
+                "title" : "An error occurred",
+                "status" : 400,
+                "detail": "Invalid Secret"
+            }, 400
         return f(*args, **kwargs)
     return decorated_function
 
