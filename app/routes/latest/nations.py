@@ -1,6 +1,6 @@
 from flask import Flask, Blueprint, request
 from ...helpers.api import ApiHelper
-from ...helpers.decorators import rapidapi_only
+from ...decorators import rapidapi_only
 from app.models import Nations
 from app import cache
 

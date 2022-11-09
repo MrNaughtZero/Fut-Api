@@ -1,6 +1,6 @@
 from flask import Flask, Blueprint
 from ...helpers.api import ApiHelper
-from ...helpers.decorators import rapidapi_only
+from ...decorators import rapidapi_only
 from app.models import Leagues
 from app import cache
 
