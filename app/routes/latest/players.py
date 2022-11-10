@@ -157,7 +157,7 @@ def latest_players(player_id):
 @api_bp.post("/players/search")
 @rapidapi_only
 def search_players():
-    request_json = request.get_json()
+    request_json = json.loads(request.data, strict=False)
     result = Player().search_players(request_json)
     
     if not result[1]:
