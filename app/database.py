@@ -1,8 +1,6 @@
 from flask_mysqldb import MySQL
 from flask_sqlalchemy import SQLAlchemy
 from os import environ
-from dotenv import load_dotenv
-load_dotenv()
 
 database_path = f'mysql://{environ.get("DB_USER")}:{environ.get("DB_PASS")}@{environ.get("DB_HOST")}/{environ.get("DB_NAME")}'
 
