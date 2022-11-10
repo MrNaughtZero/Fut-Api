@@ -26,3 +26,6 @@ app.register_blueprint(players.api_bp, url_prefix="/v1")
 app.register_blueprint(users.api_bp, url_prefix="/v1")
 
 setup_db(app)
+
+if __name__ == "__main__":
+    app.run()
