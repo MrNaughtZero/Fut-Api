@@ -9,8 +9,12 @@ app.secret_key = environ.get('APP_SECRET')
 
 config = {
     "DEBUG": True,
-    "CACHE_TYPE": "SimpleCache",
-    "CACHE_DEFAULT_TIMEOUT": 300,
+    "CACHE_TYPE": environ.get("CACHE_TYPE"),
+    "CACHE_DEFAULT_TIMEOUT": environ.get("CACHE_DEFAULT_TIMEOUT"),
+    "CACHE_REDIS_HOST" : environ.get("CACHE_REDIS_HOST"),
+    "CACHE_REDIS_PORT" : environ.get("CACHE_REDIS_PORT"),
+    "CACHE_REDIS_DB" : environ.get("CACHE_REDIS_DB"),
+    "CACHE_REDIS_URL" : environ.get("CACHE_REDIS_URL"),
     "JSON_SORT_KEYS" : False
 }
 
