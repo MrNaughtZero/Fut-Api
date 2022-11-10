@@ -4,8 +4,8 @@ from flask_caching import Cache
 from os import environ
 
 app = Flask(__name__)
-app.debug = True
-app.secret_key = environ.get("APP_SECRET")
+app.debug = (environ.get('APP_DEBUG', 'False').lower() == 'true')
+app.secret_key = environ.get('APP_SECRET')
 
 config = {
     "DEBUG": True,
