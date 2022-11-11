@@ -2,6 +2,7 @@ from flask import Flask, Blueprint
 from app.database import setup_db
 from flask_caching import Cache
 from os import environ
+from .helpers import logger
 
 app = Flask(__name__)
 app.debug = (environ.get('APP_DEBUG', 'False').lower() == 'true')
@@ -30,6 +31,15 @@ app.register_blueprint(players.api_bp, url_prefix="/v1")
 app.register_blueprint(users.api_bp, url_prefix="/v1")
 
 setup_db(app)
+
+@app.errorhandler(Exception)
+def all_exception_handler(error):
+    app.logger.error(error)
+    return {
+        "title" : "An error occurred",
+        "status" : 500,
+        "detail": "Something has went wrong. Please try your request again."
+    }, 500
 
 if __name__ == "__main__":
     app.run()
