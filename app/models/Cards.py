@@ -1,5 +1,6 @@
 from app.database import db
 import app.models.all as Models
+from app.helpers.emails import Emails
 import math
 
 class Cards(db.Model):
@@ -62,4 +63,10 @@ class Cards(db.Model):
             return [False, False]
 
         return [q.card_img[0].img, True]
+
+    def check_for_unknown(self):
+        q = self.query.filter_by(card_name="unknown").first()
+
+        if q:
+            Emails().unknown_cards()
   
