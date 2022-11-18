@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint, request
 from ...helpers.api import ApiHelper
 from ...decorators import rapidapi_only
-from app.models import Nations
+import app.models.all as Models
 from app import cache
 
 api_bp = Blueprint("nations", __name__)
@@ -11,7 +11,7 @@ api_bp = Blueprint("nations", __name__)
 @cache.cached(query_string=True)
 def nations():
     query_params = ApiHelper().convert_query_params()
-    result = Nations().find_nations_with_page_and_limit(query_params[0], query_params[1])
+    result = Models.Nations().find_nations_with_page_and_limit(query_params[0], query_params[1])
     
     if not result[1]:
         return {
@@ -29,7 +29,7 @@ def nations():
 @rapidapi_only
 @cache.cached()
 def specific_nation(nation_id):
-    result = Nations().get_nation(nation_id)
+    result = Models.Nations().get_nation(nation_id)
     
     if not result[1]:
         return {
@@ -46,7 +46,7 @@ def specific_nation(nation_id):
 @rapidapi_only
 @cache.cached()
 def nation_image(nation_id):
-    result = Nations().get_nation_image(nation_id)
+    result = Models.Nations().get_nation_image(nation_id)
     
     if not result[1]:
         return {

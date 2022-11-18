@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint, request
 from ...helpers.api import ApiHelper
 from ...decorators import rapidapi_only
-from app.models import Player, PlayerImage
+import app.models.all as Models
 from app import cache
 
 api_bp = Blueprint("players", __name__)
@@ -11,7 +11,7 @@ api_bp = Blueprint("players", __name__)
 @cache.cached(query_string=True)
 def players():
     query_params = ApiHelper().convert_query_params()
-    result = Player().find_players_with_page_and_limit(query_params[0], query_params[1])
+    result = Models.Player().find_players_with_page_and_limit(query_params[0], query_params[1])
     
     if not result[1]:
         return {
@@ -30,7 +30,7 @@ def players():
 @cache.cached(query_string=True)
 def players_by_nation(nation_id):
     query_params = ApiHelper().convert_query_params()
-    result = Player().find_players_by_nation_with_page_and_limit(query_params[0], query_params[1], nation_id)
+    result = Models.Player().find_players_by_nation_with_page_and_limit(query_params[0], query_params[1], nation_id)
     
     if not result[1]:
         return {
@@ -49,7 +49,7 @@ def players_by_nation(nation_id):
 @cache.cached(query_string=True)
 def players_by_league(league_id):
     query_params = ApiHelper().convert_query_params()
-    result = Player().find_players_by_league_with_page_and_limit(query_params[0], query_params[1], league_id)
+    result = Models.Player().find_players_by_league_with_page_and_limit(query_params[0], query_params[1], league_id)
     
     if not result[1]:
         return {
@@ -68,7 +68,7 @@ def players_by_league(league_id):
 @cache.cached(query_string=True)
 def players_by_club(club_id):
     query_params = ApiHelper().convert_query_params()
-    result = Player().find_players_by_club_with_page_and_limit(query_params[0], query_params[1], club_id)
+    result = Models.Player().find_players_by_club_with_page_and_limit(query_params[0], query_params[1], club_id)
     
     if not result[1]:
         return {
@@ -84,9 +84,9 @@ def players_by_club(club_id):
 
 @api_bp.get("/players/<player_id>")
 @rapidapi_only
-@cache.cached()
+##@cache.cached()
 def player_by_id(player_id):
-    result = Player().find_player_by_id(player_id)
+    result = Models.Player().find_player_by_id(player_id)
     
     if not result[1]:
         return {
@@ -103,7 +103,7 @@ def player_by_id(player_id):
 @rapidapi_only
 @cache.cached()
 def player_image(player_id):
-    result = PlayerImage().get_image_by_id(player_id)
+    result = Models.PlayerImage().get_image_by_id(player_id)
     
     if not result[1]:
         return {
@@ -120,9 +120,9 @@ def player_image(player_id):
 @rapidapi_only
 def player_price(player_id, force_update = False):
     if "price_update" in request.args and int(request.args["price_update"]) == 1:
-        Player().update_player_prices(player_id)
+        Models.Player().update_player_prices(player_id)
     
-    result = Player().get_player_price(player_id)
+    result = Models.Player().get_player_price(player_id)
     
     if not result[1]:
         return {
@@ -140,7 +140,7 @@ def player_price(player_id, force_update = False):
 @cache.cached(query_string=True)
 def latest_players(player_id):
     query_params = ApiHelper().convert_query_params()
-    result = Player().latest_players(query_params[0], query_params[1], player_id)
+    result = Models.Player().latest_players(query_params[0], query_params[1], player_id)
     
     if not result[1]:
         return {
@@ -158,7 +158,7 @@ def latest_players(player_id):
 @rapidapi_only
 def search_players():
     request_json = json.loads(request.data, strict=False)
-    result = Player().search_players(request_json)
+    result = Models.Player().search_players(request_json)
     
     if not result[1]:
         return {

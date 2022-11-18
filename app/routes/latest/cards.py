@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint
 from ...helpers.api import ApiHelper
 from ...decorators import rapidapi_only
-from app.models import Cards
+import app.models.all as Models
 from app import cache
 
 api_bp = Blueprint("cards", __name__)
@@ -11,7 +11,7 @@ api_bp = Blueprint("cards", __name__)
 @cache.cached(query_string=True)
 def cards():
     query_params = ApiHelper().convert_query_params()
-    result = Cards().find_cards_with_page_and_limit(query_params[0], query_params[1])
+    result = Models.Cards().find_cards_with_page_and_limit(query_params[0], query_params[1])
     
     if not result[1]:
         return {
@@ -29,7 +29,7 @@ def cards():
 @rapidapi_only
 @cache.cached()
 def specific_card(card_id):
-    result = Cards().get_card(card_id)
+    result = Models.Cards().get_card(card_id)
     
     if not result[1]:
         return {
@@ -46,7 +46,7 @@ def specific_card(card_id):
 @rapidapi_only
 @cache.cached()
 def card_image(card_id):
-    result = Cards().get_image(card_id)
+    result = Models.Cards().get_image(card_id)
     
     if not result[1]:
         return {
