@@ -3,9 +3,9 @@ from app.database import setup_db
 from flask_caching import Cache
 from os import environ
 from .helpers import logger
+from app.helpers.emails import Emails
 
 app = Flask(__name__)
-app.debug = (environ.get('APP_DEBUG', 'False').lower() == 'true')
 app.secret_key = environ.get('APP_SECRET')
 
 config = {
@@ -35,6 +35,7 @@ setup_db(app)
 @app.errorhandler(Exception)
 def all_exception_handler(error):
     app.logger.error(error)
+    Emails().exception_occurred(error)
     return {
         "title" : "An error occurred",
         "status" : 500,
