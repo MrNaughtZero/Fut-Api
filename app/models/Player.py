@@ -1,5 +1,6 @@
 from app.database import db
 import app.models.all as Models
+from app.helpers.requests import ExternalRequests
 import math
 import datetime
 import requests
@@ -46,35 +47,21 @@ class Player(db.Model):
     def update_prices(self):
         all_players = self.query.all()
 
-        for index, player in enumerate(all_players):
-            pc_uri = f"https://www.futbin.org/futbin/api/23/fetchPlayerInformationAndroid?ID={str(player.fut_android_id)}&platform=PC"
-            console_uri = f"https://www.futbin.org/futbin/api/23/fetchPlayerInformationAndroid?ID={player.fut_android_id}&platform=PS"
-            headers = {
-                "Accept" : "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Encoding" : "gzip, deflate, br",
-                "DNT" : "1",
-                "Host" : "futbin.org",
-                "TE" : "trailers",
-                "Upgrade-Insecure-Requests" : "1",
-                "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:107.0) Gecko/20100101 Firefox/107.0"
-            }
-
-            pc_request = requests.get(pc_uri, headers=headers)
+        for index, player in enumerate(all_players):            
+            pc_request = ExternalRequests().update_prices(str(player.fut_android_id), "PC")
             
-            
-            if pc_request.status_code == 304 or pc_request.status_code == 200 :
-                response = pc_request.json()
-                for obj in response["data"]:
+            if pc_request:
+                for obj in pc_request["data"]:
                     if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
                         player.price[0].pc = obj["LCPrice"]
                         db.session.commit()
             else:
                 return False
 
-            ps_request = requests.get(console_uri, headers=headers)
-            if ps_request.status_code == 304 or ps_request.status_code == 200:
-                response = ps_request.json()
-                for obj in response["data"]:
+            console_request = ExternalRequests().update_prices(str(player.fut_android_id), "PS")
+            
+            if console_request:
+                for obj in console_request["data"]:
                     if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
                         player.price[0].console = obj["LCPrice"]
                         db.session.commit()
@@ -247,40 +234,27 @@ class Player(db.Model):
     def update_player_prices(self, player_id):
         try:
             player = self.query.filter_by(player_id=player_id).first()
-            
-            pc_uri = f"https://www.futbin.org/futbin/api/23/fetchPlayerInformationAndroid?ID={str(player.fut_android_id)}&platform=PC"
-            console_uri = f"https://www.futbin.org/futbin/api/23/fetchPlayerInformationAndroid?ID={player.fut_android_id}&platform=PS"
-            
-            headers = {
-                "Accept" : "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Encoding" : "gzip, deflate, br",
-                "DNT" : "1",
-                "Host" : "futbin.org",
-                "TE" : "trailers",
-                "Upgrade-Insecure-Requests" : "1",
-                "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:107.0) Gecko/20100101 Firefox/107.0"
-            }
 
-            pc_request = requests.get(pc_uri, headers=headers)
+            pc_request = ExternalRequests().update_prices(str(player.fut_android_id), "PC")
             
-            if pc_request.status_code == 304 or pc_request.status_code == 200 :
-                response = pc_request.json()
-                for obj in response["data"]:
+            if pc_request:
+                for obj in pc_request["data"]:
                     if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
                         player.price[0].pc = obj["LCPrice"] if obj["LCPrice"] else 0
                         db.session.commit()
 
-            ps_request = requests.get(console_uri, headers=headers)
-            if ps_request.status_code == 304 or ps_request.status_code == 200:
-                response = ps_request.json()
-                for obj in response["data"]:
+            console_request = ExternalRequests().update_prices(str(player.fut_android_id), "PS")
+            
+            if console_request:
+                for obj in console_request["data"]:
                     if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
                         player.price[0].console = obj["LCPrice"] if obj["LCPrice"] else 0
                         db.session.commit()
 
-            DeleteCache().update_players_cache()
+            ##DeleteCache().update_players_cache()
         except Exception as e:
-            pass
+            print(e)
+            raise Exception("Unable to update player price")
 
     def latest_players(self, page, limit, player_id):
         try:
@@ -878,24 +852,10 @@ class Player(db.Model):
                 break
             
             try:
-                url = f"https://www.futbin.org/futbin/api/23/fetchPlayerInformationAndroid?ID={i}"
+                r = ExternalRequests().update_player_database(i)
 
-                headers = {
-                    "Accept" : "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                    "Accept-Encoding" : "gzip, deflate, br",
-                    "DNT" : "1",
-                    "Host" : "futbin.org",
-                    "TE" : "trailers",
-                    "Upgrade-Insecure-Requests" : "1",
-                    "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:107.0) Gecko/20100101 Firefox/107.0"
-                }
-
-                r = requests.get(url, headers=headers)
-
-                if r.status_code == 304 or r.status_code == 200 :
-                    response = r.json()
-
-                    for d in response["data"]:
+                if r:
+                    for d in r["data"]:
                         if not self.query.filter_by(fut_resource_id=d["Player_Resource"]).first():
                             player_data = {
                                 "player_id" : db.session.query(func.max(Player.player_id)).all()[0][0] + 1,
@@ -1026,11 +986,8 @@ class Player(db.Model):
                             new_player_id = Models.Player().add_player(player_data)
                             Models.Player().update_player_prices(player_data["player_id"])
                                     
-                elif r.status_code == 404:
-                    passed_players = passed_players + 1
-
                 else:
-                    raise Exception(f"Unable to add new player to database. fut_android_id = {i}")
+                    passed_players = passed_players + 1
 
             except Exception as e:
                 raise Exception(f"Unable to add new player to database. fut_android_id = {i}. E: {e}")
