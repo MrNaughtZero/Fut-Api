@@ -21,6 +21,6 @@ class PlayerTraits(db.Model):
         q = self.query.filter_by(player_id=player_id).all()
         if q:
             for trait in q:
-                traits.append(q.trait.lower())
+                traits.append(trait.trait.lower())
 
         return traits
