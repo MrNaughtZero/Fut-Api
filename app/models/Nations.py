@@ -55,6 +55,22 @@ class Nations(db.Model):
                 
             return ["Something went wrong. Please try again", False, 500]
 
+    def get_nation_id_by_name(self, nation_name, fut_nation_id = 1):
+        q = self.query.filter_by(nation_name=nation_name).first()
+
+        if q:
+            return q.nation_id
+        else:
+            self.nation_id = self.query.order_by(self.nation_id.desc()).first().nation_id + 1
+            self.nation_name = nation_name
+            self.nation_img = Models.ExternalRequests().get_nation_image(fut_nation_id)
+            
+            db.session.add(self)
+            db.session.commit()
+
+        return self.nation_id
+
+
     def get_nation_image(self, nation_id):
         q = self.query.filter_by(nation_id=nation_id).first()
 

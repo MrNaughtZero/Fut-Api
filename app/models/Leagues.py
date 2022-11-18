@@ -47,6 +47,21 @@ class Leagues(db.Model):
 
         return [league, True]
 
+    def get_league_id_by_name(self, league_name, fut_league_id = 1):
+        q = self.query.filter_by(league_name=league_name).first()
+
+        if q:
+            return q.league_id
+        else:
+            self.league_id = self.query.order_by(self.league_id.desc()).first().league_id + 1
+            self.league_name = league_name
+            self.league_img = Models.ExternalRequests().get_league_image(fut_league_id)
+            
+            db.session.add(self)
+            db.session.commit()
+
+        return self.league_id
+
     def get_league_image(self, league_id):
         q = self.query.filter_by(league_id=league_id).first()
 

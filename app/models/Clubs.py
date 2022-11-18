@@ -46,6 +46,21 @@ class Clubs(db.Model):
 
         return [club, True]
 
+    def get_club_id_by_name(self, club, fut_club_id = 1):
+        q = self.query.filter_by(club_name=club_name).first()
+
+        if q:
+            return q.club_id
+        else:
+            self.club_id = self.query.order_by(self.club_id.desc()).first().club_id + 1
+            self.club_name = club_name
+            self.club_img = Models.ExternalRequests().get_club_image(fut_club_id)
+            
+            db.session.add(self)
+            db.session.commit()
+
+        return self.club_id
+
     def get_club_image(self, club_id):
         q = self.query.filter_by(club_id=club_id).first()
 

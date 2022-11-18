@@ -1,4 +1,5 @@
 import requests
+import base64
 
 class ExternalRequests():
     def __init__(self):
@@ -31,3 +32,15 @@ class ExternalRequests():
             return False
 
         raise Exception(f"Unable to add new player to database. fut_android_id = {id}")
+
+    def get_nation_image(self, nation_id):
+        url = f"https://cdn.futbin.com/content/fifa23/img/nation/{nation_id}.png"
+        return base64.b64encode(requests.get(url).content).decode("utf-8")
+
+    def get_league_image(self, league_id):
+        url = f"https://cdn.futbin.com/content/fifa23/img/league/{league_id}.png"
+        return base64.b64encode(requests.get(url).content).decode("utf-8")
+
+    def get_club_image(self, club_id):
+        url = f"https://cdn.futbin.com/content/fifa23/img/clubs/{club_id}.png"
+        return base64.b64encode(requests.get(url).content).decode("utf-8")
