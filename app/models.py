@@ -8,6 +8,7 @@ import requests
 from time import sleep
 from app import cache
 from app.helpers.cache import DeleteCache
+from sqlalchemy import func
 
 class Player(db.Model):
     __tablename__ = "players"
@@ -86,36 +87,37 @@ class Player(db.Model):
             return True
 
     def add_player(self, data):
-        self.player_id = data["id"],
+        self.player_id = data["player_id"],
         self.name = data["name"]
         self.age = data["age"]
         self.dob = data["dob"]
-        self.card_type = data["cardType"]
-        self.skill_moves = data["skillMoves"]
-        self.weak_foot = data["weakFoot"]
-        self.preferred_foot = data["preferredFoot"]
+        self.card_type = data["card_type"]
+        self.skill_moves = data["skill_moves"]
+        self.weak_foot = data["weak_foot"]
+        self.preferred_foot = data["preferred_foot"]
         self.height = data["height"]
         self.weight = data["weight"]
         self.rating = data["rating"]
         self.position = data["position"]
-        self.accelerate = data["acceleRATE"]
+        self.accelerate = data["accelerate"]
         self.nation = data["nation"]
         self.nation_id = data["nation_id"]
         self.league = data["league"]
         self.league_id = data["league_id"]
         self.club = data["club"]
         self.club_id = data["club_id"]
-        self.fut_player_id = data["futPlayerId"]
-        self.fut_resource_id = data["futSourceId"]
-        self.added_on = data["addedOn"]
+        self.fut_player_id = data["fut_player_id"]
+        self.fut_resource_id = data["fut_resource_id"]
+        self.fut_android_id = data["fut_android_id"]
+        self.added_on = data["added_on"]
 
-        player = db.session.add(self)
+        db.session.add(self)
         db.session.commit()
 
         PlayerAttributes().add_attributes(self.id, data["attributes"], self.position)
         
-        if(len(data["altPositions"]) > 0):
-            for position in data["altPositions"]:
+        if(len(data["alt_positions"]) > 0):
+            for position in data["alt_positions"]:
                 PlayerAltPositions().add_player_positions(self.id, position)
 
         if(len(data["traits"]) > 0):
@@ -124,9 +126,11 @@ class Player(db.Model):
 
         PlayerPrice().add_player_price(self.id)
 
-        PlayerImage().add_image(player.player_id, player.fut_resource_id, data["img"])
+        PlayerImage().add_image(self.id, self.fut_resource_id)
 
         cache.clear()
+
+        return self.id
 
     def find_players_with_page_and_limit(self, page, limit):
         try:
@@ -266,7 +270,7 @@ class Player(db.Model):
                 response = pc_request.json()
                 for obj in response["data"]:
                     if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
-                        player.price[0].pc = obj["LCPrice"]
+                        player.price[0].pc = obj["LCPrice"] if obj["LCPrice"] else 0
                         db.session.commit()
 
             ps_request = requests.get(console_uri, headers=headers)
@@ -274,11 +278,12 @@ class Player(db.Model):
                 response = ps_request.json()
                 for obj in response["data"]:
                     if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
-                        player.price[0].console = obj["LCPrice"]
+                        player.price[0].console = obj["LCPrice"] if obj["LCPrice"] else 0
                         db.session.commit()
 
             DeleteCache().update_players_cache()
         except Exception as e:
+            print(e)
             pass
 
     def latest_players(self, page, limit, player_id):
@@ -820,16 +825,16 @@ class Player(db.Model):
             "weight" : player.weight,
             "rating" : player.rating,
             "position" : player.position,
-            "alt_positions" : PlayerAltPositions().get_player_alt_positions(player.player_id),
+            "alt_positions" : PlayerAltPositions().get_player_alt_positions(player.id),
             "accelerate" : player.accelerate,
-            "traits" : [], ## Add in once I fix traits
+            "traits" : PlayerTraits().get_all_player_traits(player.id),
             "nation" : player.nation,
             "nation_id" : player.nation_id,
             "league" : player.league,
             "league_id" : player.league_id,
             "club" : player.club,
             "club_id" : player.club_id,
-            "price" : PlayerPrice().get_player_price(player.player_id),
+            "price" : PlayerPrice().get_player_price(player.id),
             "isSbc" : player.sbc,
             "added_on" : player.added_on
         }
@@ -868,13 +873,275 @@ class Player(db.Model):
 
         return data
 
+    def update_player_databases(self):
+        last_android_id = db.session.query(func.max(Player.fut_android_id)).all()[0][0]
+        passed_players = 0
+
+        for i in range(last_android_id + 1, last_android_id + 8000):
+            if passed_players > 100:
+                break
+            
+            try:
+                url = f"https://www.futbin.org/futbin/api/23/fetchPlayerInformationAndroid?ID={i}"
+
+                headers = {
+                    "Accept" : "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Accept-Encoding" : "gzip, deflate, br",
+                    "DNT" : "1",
+                    "Host" : "futbin.org",
+                    "TE" : "trailers",
+                    "Upgrade-Insecure-Requests" : "1",
+                    "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:107.0) Gecko/20100101 Firefox/107.0"
+                }
+
+                r = requests.get(url, headers=headers)
+
+                if r.status_code == 304 or r.status_code == 200 :
+                    response = r.json()
+
+                    for d in response["data"]:
+                        if not self.query.filter_by(fut_resource_id=d["Player_Resource"]).first():
+                            player_data = {
+                                "player_id" : db.session.query(func.max(Player.player_id)).all()[0][0] + 1,
+                                "name" : d["Player_Name"],
+                                "age" : self.age_from_dob(d["Player_DOB"].replace("\/", "/").replace("//", "/")),
+                                "dob" : d["Player_DOB"].replace("\/", "/").replace("//", "-").replace("/", "-"),
+                                "card_type" : self.calc_card_type(d["Player_Rating"], d["Rare"], d["Rare_Type"] ),
+                                "skill_moves" : d["Skills"],
+                                "weak_foot" : d["Weak_Foot"],
+                                "preferred_foot" : d["Player_Foot"],
+                                "height" : int(d["Player_Height"].split(" ")[0].split("cm")[0]),
+                                "weight" : d["Player_Weight"],
+                                "rating" : d["Player_Rating"],
+                                "position" : d["Player_Position"],
+                                "accelerate" : d["AcceleRATE"],
+                                "nation" : d["country_name"],
+                                "nation_id" : Nations().get_nation_id_by_name(d["country_name"]),
+                                "league" : d["league_name"],
+                                "league_id" : Leagues().get_league_id_by_name(d["league_name"]),
+                                "club" : d["club_name"],
+                                "club_id" : Clubs().get_club_id_by_name(d["club_name"]),
+                                "fut_player_id" : d["Player_ID"],
+                                "fut_resource_id" : d["Player_Resource"],
+                                "fut_android_id" : i,
+                                "attributes" : {
+                                    "pace" : {
+                                        "overall" : d["Player_Pace"] if d["Player_Pace"] else 0,
+                                        "acceleration" : d["Acceleration"] if d["Acceleration"] else 0,
+                                        "sprint_speed" : d["Sprintspeed"] if d["Sprintspeed"] else 0
+                                    },
+                                    "shooting" : {
+                                        "overall" : d["Player_Shooting"] if d["Player_Shooting"] else 0,
+                                        "positioning" : d["Positioning"] if d["Positioning"] else 0,
+                                        "finishing" : d["Finishing"] if d["Finishing"] else 0,
+                                        "shot_power" : d["Shotpower"] if d["Shotpower"] else 0,
+                                        "long_shots" : d["Longshots"] if d["Longshots"] else 0,
+                                        "volleys" : d["Volleys"] if d["Volleys"] else 0,
+                                        "penalties" : d["Penalties"] if d["Penalties"] else 0
+                                    },
+                                    "passing" : {
+                                        "overall" : d["Player_Passing"] if d["Player_Passing"] else 0,
+                                        "vision" : d["Vision"] if d["Vision"] else 0,
+                                        "crossing" : d["Crossing"] if d["Crossing"] else 0,
+                                        "fk_accuracy" : d["Freekickaccuracy"] if d["Freekickaccuracy"] else 0,
+                                        "short_pass" : d["Shortpassing"] if d["Shortpassing"] else 0,
+                                        "long_pass" : d["Longpassing"] if d["Longpassing"] else 0,
+                                        "curve" : d["Curve"] if d["Curve"] else 0
+                                    },
+                                    "dribbling" : {
+                                        "overall" : d["Player_Dribbling"] if d["Player_Dribbling"] else 0,
+                                        "agility" : d["Agility"] if d["Agility"] else 0,
+                                        "balance" : d["Balance"] if d["Balance"] else 0,
+                                        "reactions" : d["Reactions"] if d["Reactions"] else 0,
+                                        "ball_control" : d["Ballcontrol"] if d["Ballcontrol"] else 0,
+                                        "dribbling" : d["Dribbling"] if d["Dribbling"] else 0,
+                                        "composure" : d["Composure"] if d["Composure"] else 0
+                        
+                                    },
+                                    "defending" : {
+                                        "overall" : d["Player_Defending"] if d["Player_Defending"] else 0,
+                                        "interceptions" : d["Interceptions"] if d["Interceptions"] else 0,
+                                        "heading_accuracy" : d["Headingaccuracy"] if d["Headingaccuracy"] else 0,
+                                        "def_awareness" : d["Marking"] if d["Marking"] else 0,
+                                        "standing_tackle" : d["Standingtackle"] if d["Standingtackle"] else 0,
+                                        "sliding_tackle" : d["Slidingtackle"] if d["Slidingtackle"] else 0,
+                                    },
+                                    "physical" : {
+                                        "overall" : d["Player_Heading"] if d["Player_Heading"] else 0,
+                                        "jumping" : d["Jumping"] if d["Jumping"] else 0,
+                                        "stamina" : d["Stamina"] if d["Stamina"] else 0,
+                                        "strength" : d["Strength"] if d["Strength"] else 0,
+                                        "aggression" : d["Aggression"] if d["Aggression"] else 0
+                                    },
+                                    "gk_attributes" : {
+                                        "diving" : {
+                                            "overall" : d["Player_Pace"] if d["Player_Pace"] else 0,
+                                            "diving" : 0
+                                        },
+                                        "handling" : {
+                                            "overall" : d["Player_Shooting"] if d["Player_Shooting"] else 0,
+                                            "handling" : 0,
+                                        },
+                                        "kicking" : {
+                                            "overall" : d["Player_Passing"] if d["Player_Passing"] else 0,
+                                            "kicking" : 0,
+                                        },
+                                        "reflexes" : {
+                                            "overall" : d["Player_Dribbling"] if d["Player_Dribbling"] else 0,
+                                            "reflexes" : 0,
+                                        },
+                                        "speed" : {
+                                            "overall" : d["Player_Defending"] if d["Player_Defending"] else 0,
+                                            "acceleration" :
+                                            0,
+                                            "sprint_speed" : 0
+                                        },
+                                        "positioning" : {
+                                            "overall" : d["Player_Heading"] if d["Player_Heading"] else 0,
+                                            "positioning" : 0
+                                        },
+                                    }
+                                },
+                                
+                                "alt_positions" : [],
+                                "traits" : [],
+                                "added_on" : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            }
+
+                            if d["Player_Position"] == "GK":
+                                player_data["attributes"]["gk_attributes"]["diving"]["overall"] = d["Player_Pace"]
+                                player_data["attributes"]["gk_attributes"]["handling"]["overall"] = d["Player_Shooting"]
+                                player_data["attributes"]["gk_attributes"]["kicking"]["overall"] = d["Player_Passing"]
+                                player_data["attributes"]["gk_attributes"]["reflexes"]["reflexes"] = d["Player_Dribbling"]
+                                player_data["attributes"]["gk_attributes"]["speed"]["acceleration"] = d["Player_Defending"]
+                                player_data["attributes"]["gk_attributes"]["positioning"]["positioning"] = d["Player_Heading"]
+
+                            player_positions = [d["Player_Position2"], d["Player_Position3"], d["Player_Position4"]]
+
+                            for pos in player_positions:
+                                if pos and pos != "":
+                                    player_data["alt_positions"].append(pos)
+
+                            traits = d["Traits"].split("u'")
+                            for t in traits:
+                                if t and t != "":
+                                    player_data["traits"].append(t.replace("'", "").replace(",", "").strip())
+
+                            new_player_id = Player().add_player(player_data)
+                            Player().update_player_prices(player_data["player_id"])
+                                    
+                elif r.status_code == 404:
+                    passed_players = passed_players + 1
+
+                else:
+                    raise Exception(f"Unable to add new player to database. fut_android_id = {i}")
+
+            except Exception as e:
+                raise Exception(f"Unable to add new player to database. fut_android_id = {i}. E: {e}")
+
+    def age_from_dob(self, dob):
+        today = datetime.date.today()
+        dob = dob.split("/")
+        return today.year - int(dob[2]) - ((today.month, today.day) < (int(dob[0]), int(dob[1])))
+
+    def calc_card_type(self, rating, rare, rare_type):
+        if rating <= 64:
+            if rare == 0 and rare_type == 0:
+                return "bronze"
+            if rare == 1 and rare_type == 1:
+                return "bronze-rare"
+            if rare == 1 and rare_type == 3:
+                return "bronze-inform"
+
+        if rating > 64 and rating <= 74:
+            if rare == 0 and rare_type == 0:
+                return "silver"
+            if rare == 1 and rare_type == 1:
+                return "silver-rare"
+            if rare == 1 and rare_type == 3:
+                return "silver-inform"
+
+        if rating > 74:
+            if rare == 0 and rare_type == 0:
+                return "gold"
+            if rare == 1 and rare_type == 1:
+                return "gold-rare"
+            if rare == 1 and rare_type == 3:
+                return "gold-info"
+            if rare == 1 and rare_type == 50:
+                return "champions-rttk"
+            if rare == 1 and rare_type == 105:
+                return "conference-rttk"
+            if rare == 1 and rare_type == 150:
+                return "dynamic-duo"
+            if rare == 1 and rare_type == 150:
+                return "europa-rttk"
+            if rare == 1 and rare_type == 76:
+                return "fgs-swaps"
+            if rare == 1 and rare_type == 51:
+                return "flashback"
+            if rare == 1 and rare_type == 87:
+                return "foundations"
+            if rare == 1 and rare_type == 72:
+                return "fut-heroes"
+            if rare == 1 and rare_type == 133:
+                return "fut-heroes-marvel"
+            if rare == 1 and rare_type == 12:
+                return "icons"
+            if rare == 1 and rare_type == 53:
+                return "libertadores"
+            if rare == 1 and rare_type == 90:
+                return "moments"
+            if rare == 1 and rare_type == 91:
+                return "objectives"
+            if rare == 1 and rare_type == 21:
+                return "ones-to-watch"
+            if rare == 1 and rare_type == 42:
+                return "potm-bun"
+            if rare == 1 and rare_type == 115:
+                return "potm-eredivisie"
+            if rare == 1 and rare_type == 86:
+                return "potm-la-liga"
+            if rare == 1 and rare_type == 43:
+                return "potm-pl"
+            if rare == 1 and rare_type == 79:
+                return "ligue-1-potm"
+            if rare == 1 and rare_type == 114:
+                return "potm-series-a"
+            if rare == 1 and rare_type == 22:
+                return "rulebreaker"
+            if rare == 1 and rare_type == 52:
+                return "sudamericana"
+            if rare == 1 and rare_type == 131:
+                return "world-cup-star"
+            if rare == 1 and rare_type == 128:
+                return "world-cup-player"
+            if rare == 1 and rare_type == 129:
+                return "world-cup-icon"
+            if rare == 1 and rare_type == 130:
+                return "world-cup-ptg"
+            if rare == 1 and rare_type == 132:
+                return "world-cup-swap-token"
+            if rare == 1 and rare_type == 97:
+                return "out-of-position"
+
+        return "unknown"
+
 class PlayerImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     player_id = db.Column(db.Integer, db.ForeignKey("players.id"))
     player_resource_id = db.Column(db.Integer, nullable=False)
     img = db.Column(db.Text(5000000), nullable=False)
 
-    def add_image(self, player_id, resource_id, img):
+    def add_image(self, player_id, resource_id):
+        try:
+            try:
+                img = base64.b64encode(requests.get(f"https://cdn.futbin.com/content/fifa23/img/players/p{resource_id}.png").content).decode("utf-8")
+            except:
+                img = base64.b64encode(requests.get(f"https://cdn.futbin.com/content/fifa23/img/players/{resource_id}.png").content).decode("utf-8")
+        except Exception:
+            raise Exception("Unable to add player image to database. player_id = {}, resource_id = {}".format(player_id, resource_id))
+        
         self.player_id = player_id
         self.player_resource_id = resource_id
         self.img = img
@@ -947,34 +1214,39 @@ class PlayerAttributes(db.Model):
         self.player_id = id
         self.pace_overall = data["pace"]["overall"]
         self.pace_acceleration = data["pace"]["acceleration"]
-        self.pace_sprint_speed = data["pace"]["sprintSpeed"]
+        self.pace_sprint_speed = data["pace"]["sprint_speed"]
+        
         self.shooting_overall = data["shooting"]["overall"]
         self.shooting_positioning = data["shooting"]["positioning"]
         self.shooting_finishing = data["shooting"]["finishing"]
-        self.shooting_shot_power = data["shooting"]["shotPower"]
-        self.shooting_long_shots = data["shooting"]["longShots"]
+        self.shooting_shot_power = data["shooting"]["shot_power"]
+        self.shooting_long_shots = data["shooting"]["long_shots"]
         self.shooting_volleys = data["shooting"]["volleys"]
         self.shooting_penalties = data["shooting"]["penalties"]
+        
         self.passing_overall = data["passing"]["overall"]
         self.passing_vision = data["passing"]["vision"]
         self.passing_crossing = data["passing"]["crossing"]
-        self.passing_freekick_accuracy = data["passing"]["fkAccuracy"]
-        self.passing_short_passing = data["passing"]["shortPassing"]
-        self.passing_long_passing = data["passing"]["longPassing"]
+        self.passing_freekick_accuracy = data["passing"]["fk_accuracy"]
+        self.passing_short_passing = data["passing"]["short_pass"]
+        self.passing_long_passing = data["passing"]["long_pass"]
         self.passing_curve = data["passing"]["curve"]
+        
         self.dribbling_overall = data["dribbling"]["overall"]
         self.dribbling_agility = data["dribbling"]["agility"]
         self.dribbling_balance = data["dribbling"]["balance"]
         self.dribbling_reactions = data["dribbling"]["reactions"]
-        self.dribbling_ball_control = data["dribbling"]["ballControl"]
+        self.dribbling_ball_control = data["dribbling"]["ball_control"]
         self.dribbling_dribbling = data["dribbling"]["dribbling"]
         self.dribbling_composure = data["dribbling"]["composure"]
+        
         self.defending_overall = data["defending"]["overall"]
         self.defending_interceptions = data["defending"]["interceptions"]
-        self.defending_heading_accuracy = data["defending"]["headingAccuracy"]
-        self.defending_def_awareness = data["defending"]["defAwareness"]
-        self.defending_standing_tackle = data["defending"]["standingTackle"]
-        self.defending_sliding_tackle = data["defending"]["slidingTackle"]
+        self.defending_heading_accuracy = data["defending"]["heading_accuracy"]
+        self.defending_def_awareness = data["defending"]["def_awareness"]
+        self.defending_standing_tackle = data["defending"]["standing_tackle"]
+        self.defending_sliding_tackle = data["defending"]["sliding_tackle"]
+        
         self.physical_overall = data["physical"]["overall"]
         self.physical_jumping = data["physical"]["jumping"]
         self.physical_stamina = data["physical"]["stamina"]
@@ -984,15 +1256,20 @@ class PlayerAttributes(db.Model):
         if(position == "GK"):
             self.gk_diving_overall = data["gk_attributes"]["diving"]["overall"]
             self.gk_diving = data["gk_attributes"]["diving"]["diving"]
+            
             self.gk_handling_overall = data["gk_attributes"]["handling"]["overall"]
             self.gk_handling = data["gk_attributes"]["handling"]["handling"]
+            
             self.gk_kicking_overall = data["gk_attributes"]["kicking"]["overall"]
             self.gk_kicking = data["gk_attributes"]["kicking"]["kicking"]
+            
             self.gk_reflexes_overall = data["gk_attributes"]["reflexes"]["overall"]
             self.gk_reflexes = data["gk_attributes"]["reflexes"]["reflexes"]
+            
             self.gk_speed_overall = data["gk_attributes"]["speed"]["overall"]
             self.gk_speed_acceleration = data["gk_attributes"]["speed"]["acceleration"]
-            self.gk_speed_sprint_speed = data["gk_attributes"]["speed"]["sprintSpeed"]
+            self.gk_speed_sprint_speed = data["gk_attributes"]["speed"]["sprint_speed"]
+            
             self.gk_positioning_overall = data["gk_attributes"]["positioning"]["overall"]
             self.gk_positioning = data["gk_attributes"]["positioning"]["positioning"]
 
@@ -1005,12 +1282,13 @@ class PlayerAltPositions(db.Model):
     player_id = db.Column(db.Integer, db.ForeignKey("players.id"))
     position = db.Column(db.String(20), nullable=False)
 
-    def add_player_positions(self, id, position):
-        self.player_id = id
+    def add_player_positions(self, player_id, position):
+        self.player_id = player_id
         self.position = position
 
         db.session.add(self)
         db.session.commit()
+        print(f"Added position for ID: {player_id}")
 
     def get_player_alt_positions(self, player_id):
         positions = []
@@ -1025,12 +1303,12 @@ class PlayerTraits(db.Model):
     player_id = db.Column(db.Integer, db.ForeignKey("players.id"))
     trait = db.Column(db.String(100), nullable=False)
 
-    def add_player_traits(self, id, trait):
-        self.player_id = id
+    def add_player_traits(self, player_id, trait):
+        self.player_id = player_id
         self.trait = trait
-
         db.session.add(self)
         db.session.commit()
+        print(f"Added trait for ID: {player_id}")
 
     def get_by_trait_and_id(self, player_id, trait):
         return self.query.filter_by(player_id=player_id, trait=trait).first()
@@ -1040,7 +1318,7 @@ class PlayerTraits(db.Model):
         q = self.query.filter_by(player_id=player_id).all()
         if q:
             for trait in q:
-                traits.append(q.trait.lower())
+                traits.append(trait.trait.lower())
 
         return traits
 
@@ -1095,6 +1373,26 @@ class Nations(db.Model):
         }
 
         return [nation, True]
+
+    def get_nation_id_by_name(self, nation_name):
+        try: 
+            y = self.query.filter_by(nation_name=nation_name).first()
+            if not y:
+                return self.add_nation(nation_name, "")
+            return y.nation_id
+        except Exception as e:
+            print(e)
+            print(nation_name)
+            input()
+
+    def add_nation(self, nation_name, img):
+        self.nation_name = nation_name
+        self.nation_id = len(self.query.all()) + 1
+        self.nation_img = img
+        db.session.add(self)
+        db.session.commit()
+
+        return self.nation_id
 
     def find_nations_with_page_and_limit(self, page, limit):
         try:
@@ -1173,6 +1471,24 @@ class Leagues(db.Model):
 
         return [league, True]
 
+    def get_league_id_by_name(self, league_name):
+        try: 
+            y = self.query.filter_by(league_name=league_name).first()
+            if not y:
+                return self.add_league(league_name, "")
+            return y.league_id
+        except Exception as e:
+            raise Exception(e)
+
+    def add_league(self, league_name, img):
+        self.league_name = league_name
+        self.league_id = len(self.query.all()) + 1
+        self.league_img = img
+        db.session.add(self)
+        db.session.commit()
+
+        return self.league_id
+
     def get_league_image(self, league_id):
         q = self.query.filter_by(league_id=league_id).first()
 
@@ -1225,6 +1541,17 @@ class Clubs(db.Model):
 
         return [club, True]
 
+    def get_club_id_by_name(self, club_name):
+        try: 
+            y = self.query.filter_by(club_name=club_name).first()
+            if not y:
+                return self.add_club(club_name, "")
+            return y.club_id
+        except Exception as e:
+            raise Exception(e)
+        
+        return self.query.filter_by(club_name=name).first().club_id
+
     def get_club_image(self, club_id):
         q = self.query.filter_by(club_id=club_id).first()
 
@@ -1232,6 +1559,15 @@ class Clubs(db.Model):
             return [False, False]
 
         return [q.club_img, True]
+
+    def add_club(self, club_name, img):
+        self.club_name = club_name
+        self.club_id = len(self.query.all()) + 1
+        self.club_img = img
+        db.session.add(self)
+        db.session.commit()
+
+        return self.club_id
 
 class Cards(db.Model):
     __tablename__ = "cards"
