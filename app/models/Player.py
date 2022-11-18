@@ -115,7 +115,7 @@ class Player(db.Model):
         
         if(len(data["alt_positions"]) > 0):
             for position in data["alt_positions"]:
-                PlayerAltPositions().add_player_positions(self.id, position)
+                Models.PlayerAltPositions().add_player_positions(self.id, position)
 
         if(len(data["traits"]) > 0):
             for trait in data["traits"]:
@@ -123,7 +123,7 @@ class Player(db.Model):
 
         Models.PlayerPrice().add_player_price(self.id)
 
-        PlayerImage().add_image(self.id, self.fut_resource_id)
+        Models.PlayerImage().add_image(self.id, self.fut_resource_id)
 
         cache.clear()
 
@@ -914,11 +914,11 @@ class Player(db.Model):
                                 "position" : d["Player_Position"],
                                 "accelerate" : d["AcceleRATE"],
                                 "nation" : d["country_name"],
-                                "nation_id" : Nations().get_nation_id_by_name(d["country_name"]),
+                                "nation_id" : Models.Nations().get_nation_id_by_name(d["country_name"]),
                                 "league" : d["league_name"],
-                                "league_id" : Leagues().get_league_id_by_name(d["league_name"]),
+                                "league_id" : Models.Leagues().get_league_id_by_name(d["league_name"]),
                                 "club" : d["club_name"],
-                                "club_id" : Clubs().get_club_id_by_name(d["club_name"]),
+                                "club_id" : Models.Clubs().get_club_id_by_name(d["club_name"]),
                                 "fut_player_id" : d["Player_ID"],
                                 "fut_resource_id" : d["Player_Resource"],
                                 "fut_android_id" : i,
@@ -1025,8 +1025,8 @@ class Player(db.Model):
                                 if t and t != "":
                                     player_data["traits"].append(t.replace("'", "").replace(",", "").strip())
 
-                            new_player_id = Player().add_player(player_data)
-                            Player().update_player_prices(player_data["player_id"])
+                            new_player_id = Models.Player().add_player(player_data)
+                            Models.Player().update_player_prices(player_data["player_id"])
                                     
                 elif r.status_code == 404:
                     passed_players = passed_players + 1
