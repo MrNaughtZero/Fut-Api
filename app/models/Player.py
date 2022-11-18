@@ -252,7 +252,6 @@ class Player(db.Model):
 
             cache.clear()
         except Exception as e:
-            print(e)
             raise Exception("Unable to update player price")
 
     def latest_players(self, page, limit, player_id):
@@ -854,7 +853,7 @@ class Player(db.Model):
 
                 if r:
                     for d in r["data"]:
-                        if not self.query.filter_by(fut_resource_id=d["Player_Resource"]).first():
+                        if not self.query.filter_by(fut_resource_id=d["Player_Resource"], fut_android_id=i).first():
                             player_data = {
                                 "player_id" : db.session.query(func.max(Player.player_id)).all()[0][0] + 1,
                                 "name" : d["Player_Name"],
