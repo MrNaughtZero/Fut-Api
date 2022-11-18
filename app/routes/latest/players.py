@@ -84,7 +84,7 @@ def players_by_club(club_id):
 
 @api_bp.get("/players/<player_id>")
 @rapidapi_only
-##@cache.cached()
+@cache.cached()
 def player_by_id(player_id):
     result = Models.Player().find_player_by_id(player_id)
     
