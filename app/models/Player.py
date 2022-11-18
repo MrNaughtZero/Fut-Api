@@ -5,7 +5,6 @@ import math
 import datetime
 import requests
 from app import cache
-from app.helpers.cache import DeleteCache
 from sqlalchemy import func
 
 class Player(db.Model):
@@ -251,7 +250,7 @@ class Player(db.Model):
                         player.price[0].console = obj["LCPrice"] if obj["LCPrice"] else 0
                         db.session.commit()
 
-            ##DeleteCache().update_players_cache()
+            cache.clear()
         except Exception as e:
             print(e)
             raise Exception("Unable to update player price")
@@ -804,7 +803,6 @@ class Player(db.Model):
             "league_id" : player.league_id,
             "club" : player.club,
             "club_id" : player.club_id,
-            "price" : Models.PlayerPrice().get_player_price(player.player_id),
             "isSbc" : player.sbc,
             "added_on" : player.added_on
         }
@@ -992,6 +990,8 @@ class Player(db.Model):
             except Exception as e:
                 raise Exception(f"Unable to add new player to database. fut_android_id = {i}. E: {e}")
 
+            cache.clear()
+    
     def age_from_dob(self, dob):
         today = datetime.date.today()
         dob = dob.split("/")
