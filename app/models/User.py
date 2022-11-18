@@ -1,4 +1,5 @@
 from app.database import db
+import app.models.all as Models
 import datetime
 import random
 import string
@@ -24,7 +25,7 @@ class User(db.Model):
         db.session.add(self)
         db.session.commit()
 
-        Limiter().setup(self.id)
+        Models.Limiter().setup(self.id)
 
         return self.api_key
 
@@ -66,7 +67,7 @@ class User(db.Model):
         if not q:
             return ["Invalid API Key", False]
 
-        if not Limiter().check_limit(q.id, q.subscription):
+        if not Models.Limiter().check_limit(q.id, q.subscription):
             return ["Sorry, you've reached your daily limit of requests allowed within a 24 hour period.", False]
 
         return [True, True]

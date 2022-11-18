@@ -1,4 +1,5 @@
 from app.database import db
+import app.models.all as Models
 import math
 import datetime
 import requests
@@ -108,19 +109,19 @@ class Player(db.Model):
         player = db.session.add(self)
         db.session.commit()
 
-        PlayerAttributes().add_attributes(self.id, data["attributes"], self.position)
+        Models.PlayerAttributes().add_attributes(self.id, data["attributes"], self.position)
         
         if(len(data["altPositions"]) > 0):
             for position in data["altPositions"]:
-                PlayerAltPositions().add_player_positions(self.id, position)
+                Models.PlayerAltPositions().add_player_positions(self.id, position)
 
         if(len(data["traits"]) > 0):
             for trait in data["traits"]:
-                PlayerTraits().add_player_traits(self.id, trait)
+                Models.PlayerTraits().add_player_traits(self.id, trait)
 
-        PlayerPrice().add_player_price(self.id)
+        Models.PlayerPrice().add_player_price(self.id)
 
-        PlayerImage().add_image(player.player_id, player.fut_resource_id, data["img"])
+        Models.PlayerImage().add_image(player.player_id, player.fut_resource_id, data["img"])
 
         cache.clear()
 
@@ -209,6 +210,7 @@ class Player(db.Model):
                         
             return [self.structure_player_data(query), True, True]
         except Exception as e:
+            print(e)
             return ["Something went wrong. Please try again", False, 500]
 
     def find_players_by_nation_id(self, nation_id):
@@ -329,7 +331,7 @@ class Player(db.Model):
                         continue
 
                 if "card_type" in data:
-                    card = Cards().get_card(data["card_type"])
+                    card = Models.Cards().get_card(data["card_type"])
                     if not card:
                         raise Exception("Invalid Card")
                     if card.card_type != player.card_type:
@@ -689,13 +691,13 @@ class Player(db.Model):
                         continue
 
                 if "alt_positions" in data:
-                    positions = PlayerAltPositions().get_player_alt_positions(player.player_id)
+                    positions = Models.PlayerAltPositions().get_player_alt_positions(player.player_id)
                     for position in data["alt_positions"]:
                         if position not in positions:
                             continue
 
                 if "traits" in data:
-                    traits = PlayerTraits().get_all_player_traits(player.player_id)
+                    traits = Models.PlayerTraits().get_all_player_traits(player.player_id)
                     for trait in data["traits"]:
                         if trait not in traits:
                             continue
@@ -816,7 +818,7 @@ class Player(db.Model):
             "weight" : player.weight,
             "rating" : player.rating,
             "position" : player.position,
-            "alt_positions" : PlayerAltPositions().get_player_alt_positions(player.player_id),
+            "alt_positions" : Models.PlayerAltPositions().get_player_alt_positions(player.player_id),
             "accelerate" : player.accelerate,
             "traits" : [], ## Add in once I fix traits
             "nation" : player.nation,
@@ -825,7 +827,7 @@ class Player(db.Model):
             "league_id" : player.league_id,
             "club" : player.club,
             "club_id" : player.club_id,
-            "price" : PlayerPrice().get_player_price(player.player_id),
+            "price" : Models.PlayerPrice().get_player_price(player.player_id),
             "isSbc" : player.sbc,
             "added_on" : player.added_on
         }

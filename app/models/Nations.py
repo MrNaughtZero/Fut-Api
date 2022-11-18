@@ -1,4 +1,5 @@
 from app.database import db
+import app.models.all as Models
 import math
 
 class Nations(db.Model):
@@ -25,7 +26,7 @@ class Nations(db.Model):
         nation = {
             "id": nation_id,
             "name": q.nation_name,
-            "player_count" : len(Player().find_players_by_nation_id(nation_id))
+            "player_count" : len(Models.Player().find_players_by_nation_id(nation_id))
         }
 
         return [nation, True]

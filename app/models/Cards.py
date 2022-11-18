@@ -1,4 +1,5 @@
 from app.database import db
+import app.models.all as Models
 import math
 
 class Cards(db.Model):
@@ -23,7 +24,7 @@ class Cards(db.Model):
         card = {
             "id": card_id,
             "name": q.card_name,
-            "player_count" : len(Player().find_players_by_card_type(q.card_name))
+            "player_count" : len(Models.Player().find_players_by_card_type(q.card_name))
         }
 
         return [card, True]

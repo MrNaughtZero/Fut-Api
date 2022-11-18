@@ -1,4 +1,5 @@
 from app.database import db
+import app.models.all as Models
 import math
 
 class Clubs(db.Model):
@@ -40,7 +41,7 @@ class Clubs(db.Model):
         club = {
             "id": club_id,
             "name": q.club_name,
-            "player_count" : len(Player().find_players_by_club_id(club_id))
+            "player_count" : len(Models.Player().find_players_by_club_id(club_id))
         }
 
         return [club, True]
