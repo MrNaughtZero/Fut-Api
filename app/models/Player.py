@@ -214,7 +214,6 @@ class Player(db.Model):
                         
             return [self.structure_player_data(query), True, True]
         except Exception as e:
-            print(e)
             return ["Something went wrong. Please try again", False, 500]
 
     def find_players_by_nation_id(self, nation_id):
@@ -281,7 +280,6 @@ class Player(db.Model):
 
             DeleteCache().update_players_cache()
         except Exception as e:
-            print(e)
             pass
 
     def latest_players(self, page, limit, player_id):
