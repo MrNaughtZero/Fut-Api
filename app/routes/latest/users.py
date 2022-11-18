@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, request
-from app.models import User
+import app.models.all as Models
 import datetime
 
 api_bp = Blueprint("users", __name__)
@@ -11,7 +11,7 @@ def free_test_user():
         "subscription": "free",
         "end_date" : None
     }
-    new_user = User().add_user(data)
+    new_user = Models.User().add_user(data)
     return {"status" : "user added"}, 200
 
 @api_bp.post("/test/user/premium")
@@ -21,5 +21,5 @@ def premium_test_user():
         "subscription": "premium",
         "end_date" : datetime.datetime.now() + datetime.timedelta(28)
     }
-    new_user = User().add_user(data)
+    new_user = Models.User().add_user(data)
     return {"status" : "user added"}, 200

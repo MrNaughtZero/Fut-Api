@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint
 from ...helpers.api import ApiHelper
 from ...decorators import rapidapi_only
-from app.models import Leagues
+import app.models.all as Models
 from app import cache
 
 api_bp = Blueprint("leagues", __name__)
@@ -11,7 +11,7 @@ api_bp = Blueprint("leagues", __name__)
 @cache.cached(query_string=True)
 def leagues():
     query_params = ApiHelper().convert_query_params()
-    result = Leagues().find_leagues_with_page_and_limit(query_params[0], query_params[1])
+    result = Models.Leagues().find_leagues_with_page_and_limit(query_params[0], query_params[1])
     
     if not result[1]:
         return {
@@ -29,7 +29,7 @@ def leagues():
 @rapidapi_only
 @cache.cached()
 def specific_league(league_id):
-    result = Leagues().get_league(league_id)
+    result = Models.Leagues().get_league(league_id)
     
     if not result[1]:
         return {
@@ -46,7 +46,7 @@ def specific_league(league_id):
 @rapidapi_only
 @cache.cached()
 def league_image(league_id):
-    result = Leagues().get_league_image(league_id)
+    result = Models.Leagues().get_league_image(league_id)
     
     if not result[1]:
         return {

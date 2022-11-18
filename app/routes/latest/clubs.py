@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint, request
 from ...helpers.api import ApiHelper
 from ...decorators import rapidapi_only
-from app.models import Clubs, User
+import app.models.all as Models
 from app import cache
 
 api_bp = Blueprint("clubs", __name__)
@@ -11,7 +11,7 @@ api_bp = Blueprint("clubs", __name__)
 @cache.cached(query_string=True)
 def clubs():
     query_params = ApiHelper().convert_query_params()
-    result = Clubs().find_clubs_with_page_and_limit(query_params[0], query_params[1])
+    result = Models.Clubs().find_clubs_with_page_and_limit(query_params[0], query_params[1])
     
     if not result[1]:
         return {
@@ -29,7 +29,7 @@ def clubs():
 @rapidapi_only
 @cache.cached()
 def specific_club(club_id):
-    result = Clubs().get_club(club_id)
+    result = Models.Clubs().get_club(club_id)
     
     if not result[1]:
         return {
@@ -46,7 +46,7 @@ def specific_club(club_id):
 @rapidapi_only
 @cache.cached()
 def club_badge(club_id):
-    result = Clubs().get_club_image(club_id)
+    result = Models.Clubs().get_club_image(club_id)
     
     if not result[1]:
         return {
