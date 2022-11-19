@@ -37,7 +37,8 @@ from app.helpers.tasks import exception_occurred
 
 @app.errorhandler(Exception)
 def all_exception_handler(error):
-    exception_occurred.delay(str(error))
+    if "The requested URL was not found on the server" not in str(error):
+        exception_occurred.delay(str(error))
     app.logger.error(error)
     return {
         "title" : "An error occurred",
