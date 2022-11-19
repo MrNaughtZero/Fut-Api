@@ -2,6 +2,7 @@ from app.database import db
 import app.models.all as Models
 from app.helpers.emails import Emails
 import math
+from app.helpers.tasks import check_unknown_cards
 
 class Cards(db.Model):
     __tablename__ = "cards"
@@ -68,5 +69,5 @@ class Cards(db.Model):
         q = self.query.filter_by(card_name="unknown").first()
 
         if q:
-            Emails().unknown_cards()
+            check_unknown_cards.delay()
   
