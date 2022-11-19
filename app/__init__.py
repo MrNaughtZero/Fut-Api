@@ -3,7 +3,7 @@ from app.database import setup_db
 from flask_caching import Cache
 from os import environ
 from .helpers import logger
-from app.helpers.emails import Emails
+from app.celery import create_celery
 
 app = Flask(__name__)
 app.secret_key = environ.get('APP_SECRET')
@@ -20,6 +20,7 @@ config = {
 }
 
 app.config.from_mapping(config)
+celery = create_celery(app)
 cache = Cache(app)
 
 from .routes.latest import cards, clubs, leagues, nations, players, users
@@ -32,10 +33,12 @@ app.register_blueprint(users.api_bp, url_prefix="/v1")
 
 setup_db(app)
 
+from app.helpers.tasks import exception_occurred
+
 @app.errorhandler(Exception)
 def all_exception_handler(error):
+    exception_occurred.delay(str(error))
     app.logger.error(error)
-    Emails().exception_occurred(error)
     return {
         "title" : "An error occurred",
         "status" : 500,
