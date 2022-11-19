@@ -30,7 +30,7 @@ class Clubs(db.Model):
         except Exception as e:
             if "404" in str(e) or "NotFound" in str(e):
                 return [f"Page {str(page)} does not exist.", False, 400]
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
         
     def get_club(self, club_id):
         q = self.query.filter_by(club_id=club_id).first()

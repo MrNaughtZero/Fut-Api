@@ -53,7 +53,7 @@ class Nations(db.Model):
             if "404" in str(e) or "NotFound" in str(e):
                 return [f"Page {str(page)} does not exist.", False, 400]
                 
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def get_nation_id_by_name(self, nation_name, fut_nation_id = 1):
         q = self.query.filter_by(nation_name=nation_name).first()

@@ -31,7 +31,7 @@ class Leagues(db.Model):
             if "404" in str(e) or "NotFound" in str(e):
                 return [f"Page {str(page)} does not exist.", False, 400]
                 
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def get_league(self, league_id):
         q = self.query.filter_by(league_id=league_id).first()

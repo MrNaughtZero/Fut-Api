@@ -7,10 +7,13 @@ class Emails:
         self.email = environ.get("SMTP_EMAIL")
 
     def send_email(self, content):
-        server_ssl = smtplib.SMTP_SSL(environ.get("SMTP_HOST"), environ.get("SMTP_PORT"))
-        server_ssl.login(environ.get('SMTP_EMAIL'), environ.get('SMTP_PASSWORD'))
-        server_ssl.sendmail(environ.get('SMTP_EMAIL'), self.email, content)
-        server_ssl.close()
+        try:
+            server_ssl = smtplib.SMTP_SSL(environ.get("SMTP_HOST"), environ.get("SMTP_PORT"))
+            server_ssl.login(environ.get('SMTP_EMAIL'), environ.get('SMTP_PASSWORD'))
+            server_ssl.sendmail(environ.get('SMTP_EMAIL'), self.email, content)
+            server_ssl.close()
+        except Exception as e:
+            raise Exception(e)
 
     def players_update(self, amount_of_players):
         to = self.email
