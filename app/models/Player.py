@@ -6,6 +6,7 @@ import datetime
 import requests
 from app import cache
 from sqlalchemy import func
+from app.helpers.tasks import players_updated
 
 class Player(db.Model):
     __tablename__ = "players"
@@ -846,6 +847,7 @@ class Player(db.Model):
     def update_player_databases(self):
         last_android_id = db.session.query(func.max(Player.fut_android_id)).all()[0][0]
         passed_players = 0
+        added_players = 0
 
         for i in range(last_android_id + 1, last_android_id + 8000):
             if passed_players > 100:
@@ -985,6 +987,7 @@ class Player(db.Model):
 
                             new_player_id = Models.Player().add_player(player_data)
                             Models.Player().update_player_prices(player_data["player_id"])
+                            added_players = added_players + 1
                                     
                 else:
                     passed_players = passed_players + 1
@@ -993,6 +996,8 @@ class Player(db.Model):
                 raise Exception(e)
 
             cache.clear()
+            players_update.delay(str(added_players))
+            Models.Cards().check_for_unknown()
     
     def age_from_dob(self, dob):
         today = datetime.date.today()
