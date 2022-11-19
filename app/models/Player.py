@@ -44,31 +44,34 @@ class Player(db.Model):
     )
 
     def update_prices(self):
-        all_players = self.query.all()
+        try:
+            all_players = self.query.all()
 
-        for index, player in enumerate(all_players):            
-            pc_request = ExternalRequests().update_prices(str(player.fut_android_id), "PC")
-            
-            if pc_request:
-                for obj in pc_request["data"]:
-                    if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
-                        player.price[0].pc = obj["LCPrice"]
-                        db.session.commit()
-            else:
-                return False
+            for index, player in enumerate(all_players):            
+                pc_request = ExternalRequests().update_prices(str(player.fut_android_id), "PC")
+                
+                if pc_request:
+                    for obj in pc_request["data"]:
+                        if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
+                            player.price[0].pc = obj["LCPrice"]
+                            db.session.commit()
+                else:
+                    return False
 
-            console_request = ExternalRequests().update_prices(str(player.fut_android_id), "PS")
-            
-            if console_request:
-                for obj in console_request["data"]:
-                    if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
-                        player.price[0].console = obj["LCPrice"]
-                        db.session.commit()
-            else:
-                return False
+                console_request = ExternalRequests().update_prices(str(player.fut_android_id), "PS")
+                
+                if console_request:
+                    for obj in console_request["data"]:
+                        if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
+                            player.price[0].console = obj["LCPrice"]
+                            db.session.commit()
+                else:
+                    return False
 
-            return True
-
+                return True
+        except Exception as e:
+            raise Exception(e)
+    
     def add_player(self, data):
         self.player_id = data["player_id"],
         self.name = data["name"]
@@ -132,7 +135,7 @@ class Player(db.Model):
                 result.append(structured)
             return [result, True, total_pages]
         except Exception as e:
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def find_players_by_nation_with_page_and_limit(self, page, limit, nation_id):
         try:
@@ -151,7 +154,7 @@ class Player(db.Model):
                 result.append(structured)
             return [result, True, total_pages]
         except Exception as e:
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def find_players_by_league_with_page_and_limit(self, page, limit, league_id):
         try:
@@ -170,7 +173,7 @@ class Player(db.Model):
                 result.append(structured)
             return [result, True, total_pages]
         except Exception as e:
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def find_players_by_club_with_page_and_limit(self, page, limit, club_id):
         try:
@@ -189,7 +192,7 @@ class Player(db.Model):
                 result.append(structured)
             return [result, True, total_pages]
         except Exception as e:
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def find_player_by_id(self, player_id):
         try:
@@ -200,7 +203,7 @@ class Player(db.Model):
                         
             return [self.structure_player_data(query), True, True]
         except Exception as e:
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def find_players_by_nation_id(self, nation_id):
         return self.query.filter_by(nation_id=nation_id).all()
@@ -228,7 +231,7 @@ class Player(db.Model):
                         
             return [prices, True, True]
         except Exception as e:
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def update_player_prices(self, player_id):
         try:
@@ -252,7 +255,7 @@ class Player(db.Model):
 
             cache.clear()
         except Exception as e:
-            raise Exception("Unable to update player price")
+            raise Exception(e)
 
     def latest_players(self, page, limit, player_id):
         try:
@@ -277,7 +280,7 @@ class Player(db.Model):
 
             return [result, True, total_pages]
         except Exception as e:
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def search_players(self, json):
         try:
@@ -728,7 +731,7 @@ class Player(db.Model):
                 return ["Name must be at least 3 characters. ", False, 400]
             if "Invalid Card" in str(e):
                 return ["Invalid card type ", False, 400]
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def structure_player_data(self, player):
         data = {
@@ -987,7 +990,7 @@ class Player(db.Model):
                     passed_players = passed_players + 1
 
             except Exception as e:
-                raise Exception(f"Unable to add new player to database. fut_android_id = {i}. E: {e}")
+                raise Exception(e)
 
             cache.clear()
     

@@ -11,8 +11,8 @@ class ApiHelper:
 
             if "limit" in request.args and (int(request.args["limit"]) and (int(request.args["limit"]) < 16 and int(request.args["limit"]) > 0)):
                 limit = int(request.args["limit"])
-        except Exception:
-            pass
+        except Exception as e:
+            raise Exception(e)
 
         return [page, limit]
 

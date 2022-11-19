@@ -54,7 +54,7 @@ class Cards(db.Model):
         except Exception as e:
             if "404" in str(e) or "NotFound" in str(e):
                 return [f"Page {str(page)} does not exist.", False, 400]
-            return ["Something went wrong. Please try again", False, 500]
+            raise Exception(e)
 
     def get_image(self, card_id):
         q = self.query.filter_by(card_id=card_id).first()
