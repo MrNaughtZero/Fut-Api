@@ -38,24 +38,24 @@ class TestModel(TestCase):
 
     def test_add_card(self):
         card_image = Models.Cards()
-        card_image.add_card(1, "gold")
+        card_image.add_card("gold")
         assert len(Models.Cards.query.all()) == 1
 
     def test_get_card(self):
         card_image = Models.Cards()
-        card_image.add_card(1, "gold")
+        card_image.add_card("gold")
 
         assert Models.Cards().get_card(1)[0]["id"] == 1
 
     def test_find_cards_with_page_and_limit(self):
         card_image = Models.Cards()
-        card_image.add_card(1, "gold")
+        card_image.add_card("gold")
 
         assert Models.Cards().find_cards_with_page_and_limit(1, 1)[0][0]["id"] == 1
 
     def test_get_card_image(self):
         card_image = Models.Cards()
-        card_image.add_card(1, "gold")
+        card_image.add_card("gold")
 
         Models.CardImage().add_img(1, "test")
 
