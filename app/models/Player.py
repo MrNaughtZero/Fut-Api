@@ -44,36 +44,7 @@ class Player(db.Model):
         db.DateTime, server_default=db.func.now(), server_onupdate=db.func.now()
     )
 
-    def update_prices(self):
-        try:
-            all_players = self.query.all()
-
-            for index, player in enumerate(all_players):            
-                pc_request = ExternalRequests().update_prices(str(player.fut_android_id), "PC")
-                
-                if pc_request:
-                    for obj in pc_request["data"]:
-                        if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
-                            player.price[0].pc = obj["LCPrice"]
-                            db.session.commit()
-                else:
-                    return False
-
-                console_request = ExternalRequests().update_prices(str(player.fut_android_id), "PS")
-                
-                if console_request:
-                    for obj in console_request["data"]:
-                        if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
-                            player.price[0].console = obj["LCPrice"]
-                            db.session.commit()
-                else:
-                    return False
-
-                return True
-        except Exception as e:
-            raise Exception(e)
-    
-    def add_player(self, data):
+    def add_player(self, data, testing=False):
         self.player_id = data["player_id"],
         self.name = data["name"]
         self.age = data["age"]
@@ -113,9 +84,12 @@ class Player(db.Model):
 
         Models.PlayerPrice().add_player_price(self.id)
 
-        Models.PlayerImage().add_image(self.id, self.fut_resource_id)
+        player_image = ExternalRequests().get_player_image(self.fut_resource_id)
 
-        cache.clear()
+        Models.PlayerImage().add_image(self.id, self.fut_resource_id, player_image)
+
+        if testing == False:
+            cache.clear()
 
         return self.id
 
@@ -124,7 +98,7 @@ class Player(db.Model):
             query_limit = 15 if limit == 0 else limit
 
             total_pages = math.ceil(len(self.query.all()) / limit)
-            query = self.query.paginate(page, query_limit).items
+            query = self.query.paginate(page=page, per_page=query_limit).items
             
             if not query:
                 return ["Page does not exist", False, 400]
@@ -143,7 +117,7 @@ class Player(db.Model):
             query_limit = 15 if limit == 0 else limit
 
             total_pages = math.ceil(len(self.query.filter_by(nation_id=nation_id).all()) / limit)
-            query = self.query.filter_by(nation_id=nation_id).paginate(page, query_limit).items
+            query = self.query.filter_by(nation_id=nation_id).paginate(page=page, per_page=query_limit).items
             
             if not query:
                 return ["Page does not exist", False, 400]
@@ -162,7 +136,7 @@ class Player(db.Model):
             query_limit = 15 if limit == 0 else limit
 
             total_pages = math.ceil(len(self.query.filter_by(league_id=league_id).all()) / limit)
-            query = self.query.filter_by(league_id=league_id).paginate(page, query_limit).items
+            query = self.query.filter_by(league_id=league_id).paginate(page=page, per_page=query_limit).items
             
             if not query:
                 return ["Page does not exist", False, 400]
@@ -181,7 +155,7 @@ class Player(db.Model):
             query_limit = 15 if limit == 0 else limit
 
             total_pages = math.ceil(len(self.query.filter_by(club_id=int(club_id)).all()) / limit)
-            query = self.query.filter_by(club_id=int(club_id)).paginate(page, query_limit).items
+            query = self.query.filter_by(club_id=int(club_id)).paginate(page=page, per_page=query_limit).items
             
             if not query:
                 return ["Page does not exist", False, 400]
@@ -227,14 +201,14 @@ class Player(db.Model):
 
             prices = {
                 "pc" : query.price[0].pc,
-                "console" : query.price[0].console
+                "console" : query.price[0].console,
             }
                         
             return [prices, True, True]
         except Exception as e:
             raise Exception(e)
 
-    def update_player_prices(self, player_id):
+    def update_player_prices(self, player_id, testing=False):
         try:
             player = self.query.filter_by(player_id=player_id).first()
 
@@ -254,7 +228,39 @@ class Player(db.Model):
                         player.price[0].console = obj["LCPrice"] if obj["LCPrice"] else 0
                         db.session.commit()
 
-            cache.clear()
+            if testing == False:
+                cache.clear()
+
+            return True
+        except Exception as e:
+            raise Exception(e)
+
+    def update_prices(self):
+        try:
+            all_players = self.query.all()
+
+            for index, player in enumerate(all_players):            
+                pc_request = ExternalRequests().update_prices(str(player.fut_android_id), "PC")
+                
+                if pc_request:
+                    for obj in pc_request["data"]:
+                        if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
+                            player.price[0].pc = obj["LCPrice"]
+                            db.session.commit()
+                else:
+                    return False
+
+                console_request = ExternalRequests().update_prices(str(player.fut_android_id), "PS")
+                
+                if console_request:
+                    for obj in console_request["data"]:
+                        if "Player_Resource" in obj and obj["Player_Resource"] == player.fut_resource_id:
+                            player.price[0].console = obj["LCPrice"]
+                            db.session.commit()
+                else:
+                    return False
+
+                return True
         except Exception as e:
             raise Exception(e)
 
@@ -844,12 +850,12 @@ class Player(db.Model):
 
         return data
 
-    def update_player_databases(self):
+    def update_player_databases(self, testing=False, range_amount=1000):
         last_android_id = db.session.query(func.max(Player.fut_android_id)).all()[0][0]
         passed_players = 0
         added_players = 0
 
-        for i in range(last_android_id + 1, last_android_id + 8000):
+        for i in range(last_android_id + 1, last_android_id + range_amount):
             if passed_players > 100:
                 break
             
@@ -902,8 +908,8 @@ class Player(db.Model):
                                         "vision" : d["Vision"] if d["Vision"] else 0,
                                         "crossing" : d["Crossing"] if d["Crossing"] else 0,
                                         "fk_accuracy" : d["Freekickaccuracy"] if d["Freekickaccuracy"] else 0,
-                                        "short_pass" : d["Shortpassing"] if d["Shortpassing"] else 0,
-                                        "long_pass" : d["Longpassing"] if d["Longpassing"] else 0,
+                                        "short_passing" : d["Shortpassing"] if d["Shortpassing"] else 0,
+                                        "long_passing" : d["Longpassing"] if d["Longpassing"] else 0,
                                         "curve" : d["Curve"] if d["Curve"] else 0
                                     },
                                     "dribbling" : {
@@ -984,20 +990,23 @@ class Player(db.Model):
                             for t in traits:
                                 if t and t != "":
                                     player_data["traits"].append(t.replace("'", "").replace(",", "").strip())
-
-                            new_player_id = Models.Player().add_player(player_data)
-                            Models.Player().update_player_prices(player_data["player_id"])
+                            
+                            new_player_id = Models.Player().add_player(data=player_data, testing=testing)
+                            Models.Player().update_player_prices(player_data["player_id"], testing=testing)
                             added_players = added_players + 1
                                     
                 else:
                     passed_players = passed_players + 1
 
             except Exception as e:
-                raise Exception(e)
+                raise Exception(f"Error adding player {i} - {e}")
+            
+            if testing == False:
+                cache.clear()
+                players_update.delay(str(added_players))
+                Models.Cards().check_for_unknown()
 
-            cache.clear()
-            players_update.delay(str(added_players))
-            Models.Cards().check_for_unknown()
+        return True
     
     def age_from_dob(self, dob):
         today = datetime.date.today()
