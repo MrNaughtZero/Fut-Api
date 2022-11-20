@@ -39,7 +39,7 @@ class Cards(db.Model):
             query_limit = 15 if limit == 0 else limit
 
             total_pages = math.ceil(len(self.query.all()) / limit)
-            query = self.query.paginate(page, query_limit).items
+            query = self.query.paginate(page=page, per_page=query_limit).items
             
             if not query:
                 return ["Page does not exist", False, 400]
@@ -70,4 +70,6 @@ class Cards(db.Model):
 
         if q:
             check_unknown_cards.delay()
+
+        return True
   

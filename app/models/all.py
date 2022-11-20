@@ -2,6 +2,7 @@ from .CardImage import CardImage
 from .Cards import Cards
 from .Clubs import Clubs
 from .Leagues import Leagues
+from .User import User
 from .Limiter import Limiter
 from .Nations import Nations
 from .Player import Player

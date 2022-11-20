@@ -8,7 +8,7 @@ api_bp = Blueprint("cards", __name__)
 
 @api_bp.get("/cards")
 @rapidapi_only
-@cache.cached(query_string=True)
+##@cache.cached(query_string=True)
 def cards():
     query_params = ApiHelper().convert_query_params()
     result = Models.Cards().find_cards_with_page_and_limit(query_params[0], query_params[1])

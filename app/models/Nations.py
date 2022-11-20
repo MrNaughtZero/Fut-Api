@@ -1,21 +1,22 @@
 from app.database import db
 import app.models.all as Models
+from app.helpers.requests import ExternalRequests
 import math
 
 class Nations(db.Model):
     __tablename__ = "nations"
-    id = db.Column(db.Integer, primary_key=True)
-    nation_id = db.Column(db.Integer, nullable=False, unique=True)
+    nation_id = db.Column(db.Integer, primary_key=True, nullable=False, unique=True, autoincrement=True)
     nation_name = db.Column(db.String(500), nullable=False, unique=True)
     nation_img = db.Column(db.Text(5000000), nullable=True)
 
-    def get_all_nations(self):
-        all_nations = {}
-        q = self.query.all()
-        for nation in q:
-            all_nations[nation.nation_id] = nation.nation_name
+    def add_nation(self, nation_name, nation_img):
+        self.nation_name = nation_name
+        self.nation_img = nation_img
 
-        return all_nations
+        db.session.add(self)
+        db.session.commit()
+
+        return self
 
     def get_nation(self, nation_id):
         q = self.query.filter_by(nation_id=nation_id).first()
@@ -36,7 +37,7 @@ class Nations(db.Model):
             query_limit = 15 if limit == 0 else limit
 
             total_pages = math.ceil(len(self.query.all()) / limit)
-            query = self.query.paginate(page, query_limit).items
+            query = self.query.paginate(page=page, per_page=query_limit).items
             
             if not query:
                 return ["Page does not exist", False, 400]
@@ -61,12 +62,8 @@ class Nations(db.Model):
         if q:
             return q.nation_id
         else:
-            self.nation_id = self.query.order_by(self.nation_id.desc()).first().nation_id + 1
-            self.nation_name = nation_name
-            self.nation_img = Models.ExternalRequests().get_nation_image(fut_nation_id)
-            
-            db.session.add(self)
-            db.session.commit()
+            new_nation = self.add_nation(nation_name, ExternalRequests().get_nation_image(fut_nation_id))
+            return new_nation.nation_id
 
         return self.nation_id
 

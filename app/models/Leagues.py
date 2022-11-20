@@ -1,20 +1,29 @@
 from app.database import db
 import app.models.all as Models
+from app.helpers.requests import ExternalRequests
 import math
 
 class Leagues(db.Model):
     __tablename__ = "leagues"
-    id = db.Column(db.Integer, primary_key=True)
-    league_id = db.Column(db.Integer, nullable=False, unique=True)
+    league_id = db.Column(db.Integer, primary_key=True, nullable=False, unique=True, autoincrement=True)
     league_name = db.Column(db.String(500), nullable=False, unique=True)
     league_img = db.Column(db.Text(5000000), nullable=False)
+
+    def add_league(self, league_name, league_img):
+        self.league_name = league_name
+        self.league_img = league_img
+
+        db.session.add(self)
+        db.session.commit()
+
+        return self
     
     def find_leagues_with_page_and_limit(self, page, limit):
         try:
             query_limit = 15 if limit == 0 else limit
 
             total_pages = math.ceil(len(self.query.all()) / limit)
-            query = self.query.paginate(page, query_limit).items
+            query = self.query.paginate(page=page, per_page=query_limit).items
             
             if not query:
                 return ["Page does not exist", False, 400]
@@ -53,12 +62,8 @@ class Leagues(db.Model):
         if q:
             return q.league_id
         else:
-            self.league_id = self.query.order_by(self.league_id.desc()).first().league_id + 1
-            self.league_name = league_name
-            self.league_img = Models.ExternalRequests().get_league_image(fut_league_id)
-            
-            db.session.add(self)
-            db.session.commit()
+            new_league = self.add_league(league_name, ExternalRequests().get_league_image(league_name))
+            return new_league.league_id
 
         return self.league_id
 
