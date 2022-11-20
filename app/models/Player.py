@@ -7,6 +7,7 @@ import requests
 from app import cache
 from sqlalchemy import func
 from app.helpers.tasks import players_updated
+from time import sleep
 
 class Player(db.Model):
     __tablename__ = "players"
@@ -200,8 +201,8 @@ class Player(db.Model):
                 return ["Invalid Player ID", False, 404]
 
             prices = {
-                "pc" : query.price[0].pc,
-                "console" : query.price[0].console,
+                "pc" : int(query.price[0].pc),
+                "console" : int(query.price[0].console),
             }
                         
             return [prices, True, True]
@@ -274,7 +275,7 @@ class Player(db.Model):
             query_limit = 15 if limit == 0 else limit
             total_pages = math.ceil(len(self.query.filter(Player.id > query.id).all()) / limit)
 
-            latest = self.query.filter(Player.id > query.id).paginate(page, query_limit).items
+            latest = self.query.filter(Player.id > query.id).paginate(page=page, per_page=query_limit).items
 
             result = []
 
@@ -316,10 +317,7 @@ class Player(db.Model):
                         continue
 
                 if "card_type" in data:
-                    card = Models.Cards().get_card(data["card_type"])
-                    if not card:
-                        raise Exception("Invalid Card")
-                    if card.card_type != player.card_type:
+                    if data["card_type"] != player.card_type:
                         continue
 
                 if "attributes" in data:
@@ -730,6 +728,9 @@ class Player(db.Model):
 
             for player in matching_players:
                 result.append(self.structure_player_data(player))
+
+            if len(result) == 0:
+                return [False, False]
 
             return [result, True, True] 
 

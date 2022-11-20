@@ -6,13 +6,11 @@ from app.helpers.tasks import check_unknown_cards
 
 class Cards(db.Model):
     __tablename__ = "cards"
-    id = db.Column(db.Integer, primary_key=True)
-    card_id = db.Column(db.Integer, nullable=False, unique=True)
+    card_id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     card_name = db.Column(db.String(500), nullable=False, unique=True)
     card_img = db.relationship("CardImage", backref="card_image", lazy=True)
 
-    def add_card(self, id, name):
-        self.card_id = id
+    def add_card(self, name):
         self.card_name = name
         db.session.add(self)
         db.session.commit()
