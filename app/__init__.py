@@ -4,7 +4,7 @@ from flask_caching import Cache
 from os import environ
 from .helpers import logger
 from app.celery import create_celery
-from datetime import timedelta
+from datetime import timedelta, datetime
 from celery.schedules import crontab
 
 app = Flask(__name__)
@@ -46,7 +46,7 @@ from app.helpers.tasks import exception_occurred
 
 @app.after_request
 def after(response):
-    app.logger.debug('URL: %s, Status: %s', request.url, response.status)
+    app.logger.debug('Time: [%s], IP: %s, URL: %s, Status: %s', datetime.now(), request.remote_addr, request.url, response.status)
     return response
 
 @app.errorhandler(Exception)
