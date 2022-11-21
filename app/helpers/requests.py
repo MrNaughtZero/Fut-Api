@@ -62,11 +62,11 @@ class ExternalRequests():
 
     def get_player_image(self, fut_resource_id):
         try:
-            url = f"https://cdn.futbin.com/content/fifa23/img/players/{fut_resource_id}.png"
+            url = f"https://cdn.futbin.com/content/fifa23/img/players/{fut_player_id}.png"
             return base64.b64encode(requests.get(url).content).decode("utf-8")
         except Exception as e:
             try:
-                url = f"https://cdn.futbin.com/content/fifa23/img/players/p{fut_resource_id}.png"
+                url = f"https://cdn.futbin.com/content/fifa23/img/players/p{fut_player_id}.png"
                 return base64.b64encode(requests.get(url).content).decode("utf-8") 
             except Exception as e:
                 raise Exception(e)
