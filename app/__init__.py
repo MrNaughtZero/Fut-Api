@@ -29,7 +29,7 @@ cache = Cache(app)
 celery.conf.CELERYBEAT_SCHEDULE = {
     "update-players" : {
         "task" : "app.helpers.tasks.update_players",
-        "schedule" : crontab(hour=13, minute=44)
+        "schedule" : crontab(hour=18, minute=45)
     }
 }
 
