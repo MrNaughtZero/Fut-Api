@@ -3,6 +3,7 @@ from ...helpers.api import ApiHelper
 from ...decorators import rapidapi_only
 import app.models.all as Models
 from app import cache
+import json
 
 api_bp = Blueprint("players", __name__)
 
@@ -120,7 +121,11 @@ def player_image(player_id):
 @rapidapi_only
 def player_price(player_id, force_update = False):
     if "price_update" in request.args and int(request.args["price_update"]) == 1:
-        Models.Player().update_player_prices(player_id)
+        if "testing" in request.args:
+            testing = True
+        else:
+            testing = False
+        Models.Player().update_player_prices(player_id, testing)
     
     result = Models.Player().get_player_price(player_id)
     
