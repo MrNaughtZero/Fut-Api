@@ -1,5 +1,7 @@
-from app import celery
+from app import celery, app
 from app.helpers.emails import Emails
+from celery.schedules import crontab
+import app.models.all as Models
 
 @celery.task
 def exception_occurred(error):
@@ -21,3 +23,8 @@ def check_unknown_cards():
         Emails().unknown_cards()
     except Exception as e:
         raise Exception(e)
+
+@celery.task
+def update_players():
+    with app.app_context():
+        Models.Player().update_player_databases()
