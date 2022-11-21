@@ -851,7 +851,7 @@ class Player(db.Model):
 
         return data
 
-    def update_player_databases(self, testing=False, range_amount=1000):
+    def update_player_databases(self, testing=False, range_amount=8000):
         last_android_id = db.session.query(func.max(Player.fut_android_id)).all()[0][0]
         passed_players = 0
         added_players = 0
@@ -995,6 +995,7 @@ class Player(db.Model):
                             new_player_id = Models.Player().add_player(data=player_data, testing=testing)
                             Models.Player().update_player_prices(player_data["player_id"], testing=testing)
                             added_players = added_players + 1
+                            print(f"Added player {str(i)}. Card type: {player_data['card_type']}")
                                     
                 else:
                     passed_players = passed_players + 1
@@ -1002,10 +1003,10 @@ class Player(db.Model):
             except Exception as e:
                 raise Exception(f"Error adding player {i} - {e}")
             
-            if testing == False:
-                cache.clear()
-                players_update.delay(str(added_players))
-                Models.Cards().check_for_unknown()
+        if testing == False:
+            cache.clear()
+            players_updated.delay(str(added_players))
+            Models.Cards().check_for_unknown()
 
         return True
     
@@ -1022,6 +1023,22 @@ class Player(db.Model):
                 return "bronze-rare"
             if rare == 1 and rare_type == 3:
                 return "bronze-inform"
+            if rare == 1 and rare_type == 132:
+                return "world-cup-swap-token"
+            if rare == 1 and rare_type == 131:
+                return "world-cup-star"
+            if rare == 1 and rare_type == 128:
+                return "world-cup-player"
+            if rare == 1 and rare_type == 129:
+                return "world-cup-icon"
+            if rare == 1 and rare_type == 130:
+                return "world-cup-ptg"
+            if rare == 1 and rare_type == 132:
+                return "world-cup-swap-token"
+            if rare == 1 and rare_type == 97:
+                return "out-of-position"
+            if rare == 1 and rare_type == 22:
+                return "rulebreaker"
 
         if rating > 64 and rating <= 74:
             if rare == 0 and rare_type == 0:
@@ -1030,6 +1047,22 @@ class Player(db.Model):
                 return "silver-rare"
             if rare == 1 and rare_type == 3:
                 return "silver-inform"
+            if rare == 1 and rare_type == 132:
+                return "world-cup-swap-token"
+            if rare == 1 and rare_type == 131:
+                return "world-cup-star"
+            if rare == 1 and rare_type == 128:
+                return "world-cup-player"
+            if rare == 1 and rare_type == 129:
+                return "world-cup-icon"
+            if rare == 1 and rare_type == 130:
+                return "world-cup-ptg"
+            if rare == 1 and rare_type == 132:
+                return "world-cup-swap-token"
+            if rare == 1 and rare_type == 97:
+                return "out-of-position"
+            if rare == 1 and rare_type == 22:
+                return "rulebreaker"
 
         if rating > 74:
             if rare == 0 and rare_type == 0:
@@ -1037,14 +1070,14 @@ class Player(db.Model):
             if rare == 1 and rare_type == 1:
                 return "gold-rare"
             if rare == 1 and rare_type == 3:
-                return "gold-info"
+                return "gold-inform"
             if rare == 1 and rare_type == 50:
                 return "champions-rttk"
             if rare == 1 and rare_type == 105:
                 return "conference-rttk"
             if rare == 1 and rare_type == 150:
                 return "dynamic-duo"
-            if rare == 1 and rare_type == 150:
+            if rare == 1 and rare_type == 46:
                 return "europa-rttk"
             if rare == 1 and rare_type == 76:
                 return "fgs-swaps"
@@ -1066,6 +1099,8 @@ class Player(db.Model):
                 return "objectives"
             if rare == 1 and rare_type == 21:
                 return "ones-to-watch"
+            if rare == 1 and rare_type == 25:
+                "premium-sbc"
             if rare == 1 and rare_type == 42:
                 return "potm-bun"
             if rare == 1 and rare_type == 115:
@@ -1094,5 +1129,7 @@ class Player(db.Model):
                 return "world-cup-swap-token"
             if rare == 1 and rare_type == 97:
                 return "out-of-position"
+            if rare == 1 and rare_type == 148:
+                return "world-cup-showdown"
 
         return "unknown"
