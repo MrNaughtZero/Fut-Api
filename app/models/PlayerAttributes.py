@@ -102,7 +102,7 @@ class PlayerAttributes(db.Model):
             self.gk_reflexes = data["gk_attributes"]["reflexes"]["reflexes"]
             self.gk_speed_overall = data["gk_attributes"]["speed"]["overall"]
             self.gk_speed_acceleration = data["gk_attributes"]["speed"]["acceleration"]
-            self.gk_speed_sprint_speed = data["gk_attributes"]["speed"]["sprintSpeed"]
+            self.gk_speed_sprint_speed = data["gk_attributes"]["speed"]["sprint_speed"]
             self.gk_positioning_overall = data["gk_attributes"]["positioning"]["overall"]
             self.gk_positioning = data["gk_attributes"]["positioning"]["positioning"]
 
