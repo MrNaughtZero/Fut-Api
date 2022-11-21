@@ -163,3 +163,4 @@ cython_debug/
 run.py
 *.DS_Store
 logs
+*.db
