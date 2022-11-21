@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint
+from flask import Flask, Blueprint, request
 from app.database import setup_db
 from flask_caching import Cache
 from os import environ
@@ -25,7 +25,6 @@ app.config.from_mapping(config)
 celery = create_celery(app)
 cache = Cache(app)
 
-## add beat schedule to celery
 celery.conf.CELERYBEAT_SCHEDULE = {
     "update-players" : {
         "task" : "app.helpers.tasks.update_players",
@@ -44,6 +43,11 @@ app.register_blueprint(users.api_bp, url_prefix="/v1")
 setup_db(app)
 
 from app.helpers.tasks import exception_occurred
+
+@app.after_request
+def after(response):
+    app.logger.debug('URL: %s, Status: %s', request.url, response.status)
+    return response
 
 @app.errorhandler(Exception)
 def all_exception_handler(error):
