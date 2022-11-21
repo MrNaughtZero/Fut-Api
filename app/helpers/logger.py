@@ -6,4 +6,4 @@ if environ.get("development") == "0":
 else:
     location = "logs/log.log"
 
-logging.basicConfig(filename='logs/log.log',level=logging.DEBUG)
+logging.basicConfig(filename=location,level=logging.DEBUG)
